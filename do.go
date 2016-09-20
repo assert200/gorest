@@ -1,4 +1,4 @@
-package restgo
+package main
 
 import (
 	"bytes"
