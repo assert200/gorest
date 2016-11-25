@@ -1,4 +1,4 @@
-package restgo
+package gorest
 
 import (
 	"fmt"
