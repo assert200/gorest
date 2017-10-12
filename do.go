@@ -7,12 +7,33 @@ import (
 	"net/http/cookiejar"
 )
 
+// Do execute the HTTP request
 func Do(session *Session, request Request) (Response, error) {
+	return do(session, request, true)
+}
+
+// DoWithoutFollowRedirects execute the HTTP request without following redirects
+func DoWithoutFollowRedirects(session *Session, request Request) (Response, error) {
+	return do(session, request, false)
+}
+
+func do(session *Session, request Request, followRedirects bool) (Response, error) {
 	if session.Cookie == nil {
 		session.Cookie, _ = cookiejar.New(nil)
 	}
 
-	client := &http.Client{Jar: session.Cookie}
+	var client *http.Client
+
+	if followRedirects {
+		client = &http.Client{Jar: session.Cookie}
+	} else {
+		client = &http.Client{
+			Jar: session.Cookie,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+	}
 
 	req, err := http.NewRequest(request.Method, request.URL.String(), bytes.NewReader(request.Body))
 
