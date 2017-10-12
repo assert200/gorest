@@ -7,12 +7,12 @@ import (
 	"net/url"
 )
 
+// Request struct
 type Request struct {
 	Body   []byte
 	Method string
 	Header http.Header
 	URL    url.URL
-	Query  map[string]string
 }
 
 func (r Request) String() string {
@@ -27,6 +27,7 @@ func (r Request) String() string {
 	return s
 }
 
+// Response struct
 type Response struct {
 	Body       []byte
 	Header     http.Header
@@ -45,6 +46,7 @@ func (r Response) String() string {
 	return s
 }
 
+// Session struct
 type Session struct {
 	Cookie *cookiejar.Jar
 }
