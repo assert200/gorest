@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"time"
 )
 
 // Do execute the HTTP request
@@ -44,6 +45,7 @@ func do(session *Session, request Request, followRedirects bool) (Response, erro
 	req.Close = true
 	req.Header = request.Header
 
+	start := time.Now()
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -52,6 +54,9 @@ func do(session *Session, request Request, followRedirects bool) (Response, erro
 
 	defer resp.Body.Close()
 
+	var response Response
+	response.ElapsedTime = time.Since(start).Seconds()
+
 	contents, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return Response{}, err
@@ -59,7 +64,6 @@ func do(session *Session, request Request, followRedirects bool) (Response, erro
 
 	session.Cookie.SetCookies(&request.URL, resp.Cookies())
 
-	var response Response
 	response.Body = contents
 	response.Header = resp.Header
 	response.StatusCode = resp.StatusCode
