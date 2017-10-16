@@ -29,18 +29,19 @@ func (r Request) String() string {
 
 // Response struct
 type Response struct {
-	Body       []byte
-	Header     http.Header
-	StatusCode int
+	Body        []byte
+	Header      http.Header
+	StatusCode  int
+	ElapsedTime float64
 }
 
 func (r Response) String() string {
 	s := fmt.Sprintf("Response status code: %d\n", r.StatusCode)
+	s += fmt.Sprintf("Elapsed Time: %f\n", r.ElapsedTime)
 	s += fmt.Sprintf("Response Body: %s\n", string(r.Body))
 
 	for k, v := range r.Header {
 		s += fmt.Sprintln("Response Header Key: ", k, "Value: ", v)
-
 	}
 
 	return s
