@@ -18,8 +18,8 @@ func DoWithoutFollowRedirects(session *Session, request Request) (Response, erro
 	return do(session, request, false)
 }
 
-// CreateNewSession generates blank session
-func CreateNewSession() *Session {
+// NewSession generates blank session
+func NewSession() *Session {
 	session := &Session{}
 	session.Cookies, _ = cookiejar.New(nil)
 	return session

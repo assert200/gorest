@@ -15,6 +15,13 @@ type Request struct {
 	URL    url.URL
 }
 
+// NewRequest factory
+func NewRequest() Request {
+	request := Request{}
+	request.Header = http.Header{}
+	return request
+}
+
 func (r Request) String() string {
 	s := fmt.Sprintf("Request URL: %s\n", r.URL.String())
 	s += fmt.Sprintf("Request Method: %s\n", r.Method)
