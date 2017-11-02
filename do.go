@@ -18,18 +18,25 @@ func DoWithoutFollowRedirects(session *Session, request Request) (Response, erro
 	return do(session, request, false)
 }
 
+// CreateNewSession generates blank session
+func CreateNewSession() *Session {
+	session := &Session{}
+	session.Cookies, _ = cookiejar.New(nil)
+	return session
+}
+
 func do(session *Session, request Request, followRedirects bool) (Response, error) {
-	if session.Cookie == nil {
-		session.Cookie, _ = cookiejar.New(nil)
+	if session.Cookies == nil {
+		session.Cookies, _ = cookiejar.New(nil)
 	}
 
 	var client *http.Client
 
 	if followRedirects {
-		client = &http.Client{Jar: session.Cookie}
+		client = &http.Client{Jar: session.Cookies}
 	} else {
 		client = &http.Client{
-			Jar: session.Cookie,
+			Jar: session.Cookies,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
@@ -62,7 +69,7 @@ func do(session *Session, request Request, followRedirects bool) (Response, erro
 		return Response{}, err
 	}
 
-	session.Cookie.SetCookies(&request.URL, resp.Cookies())
+	session.Cookies.SetCookies(&request.URL, resp.Cookies())
 
 	response.Body = contents
 	response.Header = resp.Header

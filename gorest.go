@@ -49,5 +49,5 @@ func (r Response) String() string {
 
 // Session struct
 type Session struct {
-	Cookie *cookiejar.Jar
+	Cookies *cookiejar.Jar
 }
