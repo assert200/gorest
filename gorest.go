@@ -24,7 +24,8 @@ func NewRequest() Request {
 }
 
 func (r Request) String() string {
-	s := fmt.Sprintf("Request URL: %s\n", r.URL.String())
+	s := fmt.Sprintf("Description: %s\n", r.Description)
+	s += fmt.Sprintf("Request URL: %s\n", r.URL.String())
 	s += fmt.Sprintf("Request Method: %s\n", r.Method)
 	s += fmt.Sprintf("Response Body: %s\n", r.Body)
 
@@ -45,7 +46,8 @@ type Response struct {
 }
 
 func (r Response) String() string {
-	s := fmt.Sprintf("Response status code: %d\n", r.StatusCode)
+	s := fmt.Sprintf("Description: %s\n", r.Description)
+	s += fmt.Sprintf("Response status code: %d\n", r.StatusCode)
 	s += fmt.Sprintf("Elapsed Time: %f\n", r.ElapsedTime)
 	s += fmt.Sprintf("Response Body: %s\n", string(r.Body))
 
