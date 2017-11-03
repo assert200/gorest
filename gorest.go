@@ -9,10 +9,11 @@ import (
 
 // Request struct
 type Request struct {
-	Body   []byte
-	Method string
-	Header http.Header
-	URL    url.URL
+	Body        []byte
+	Method      string
+	Header      http.Header
+	URL         url.URL
+	Description string
 }
 
 // NewRequest factory
@@ -40,6 +41,7 @@ type Response struct {
 	Header      http.Header
 	StatusCode  int
 	ElapsedTime float64
+	Description string
 }
 
 func (r Response) String() string {

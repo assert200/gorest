@@ -63,6 +63,7 @@ func do(session *Session, request Request, followRedirects bool) (Response, erro
 
 	var response Response
 	response.ElapsedTime = time.Since(start).Seconds()
+	response.Description = request.Description
 
 	contents, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
