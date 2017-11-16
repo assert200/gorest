@@ -5,16 +5,24 @@ import (
 )
 
 var wg sync.WaitGroup
+var firstRestTests []RestTest
+
+// Prime Prime
+func Prime(newRestTest RestTest) {
+	firstRestTests = append(firstRestTests, newRestTest)
+}
 
 //Start Start
-func Start(startTest RestTest) Results {
+func Start(workers int) Results {
 	todoChan := make(chan RestTest, 10000)
 	doneChan := make(chan RestTest, 10000)
 
-	todoChan <- startTest
-	wg.Add(1)
+	for _, firstRestTest := range firstRestTests {
+		todoChan <- firstRestTest
+		wg.Add(1)
+	}
 
-	for w := 1; w <= 20; w++ {
+	for w := 1; w <= workers; w++ {
 		go worker(&wg, w, todoChan, doneChan)
 	}
 
