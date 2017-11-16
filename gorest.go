@@ -1,64 +1,46 @@
 package gorest
 
 import (
-	"fmt"
-	"net/http"
-	"net/http/cookiejar"
-	"net/url"
+	"sync"
 )
 
-// Request struct
-type Request struct {
-	Body        []byte
-	Method      string
-	Header      http.Header
-	URL         url.URL
-	Description string
-}
+var wg sync.WaitGroup
 
-// NewRequest factory
-func NewRequest() Request {
-	request := Request{}
-	request.Header = http.Header{}
-	return request
-}
+//Start Start
+func Start(startTest RestTest) Results {
+	todoChan := make(chan RestTest, 10000)
+	doneChan := make(chan RestTest, 10000)
 
-func (r Request) String() string {
-	s := fmt.Sprintf("Description: %s\n", r.Description)
-	s += fmt.Sprintf("Request URL: %s\n", r.URL.String())
-	s += fmt.Sprintf("Request Method: %s\n", r.Method)
-	s += fmt.Sprintf("Response Body: %s\n", r.Body)
+	todoChan <- startTest
+	wg.Add(1)
 
-	for k, v := range r.Header {
-		s += fmt.Sprintln("Request Header Key: ", k, "Value: ", v)
+	for w := 1; w <= 20; w++ {
+		go worker(&wg, w, todoChan, doneChan)
 	}
 
-	return s
-}
+	wg.Wait()
 
-// Response struct
-type Response struct {
-	Body        []byte
-	Header      http.Header
-	StatusCode  int
-	ElapsedTime float64
-	Description string
-}
+	close(todoChan)
+	close(doneChan)
 
-func (r Response) String() string {
-	s := fmt.Sprintf("Description: %s\n", r.Description)
-	s += fmt.Sprintf("Response status code: %d\n", r.StatusCode)
-	s += fmt.Sprintf("Elapsed Time: %f\n", r.ElapsedTime)
-	s += fmt.Sprintf("Response Body: %s\n", string(r.Body))
-
-	for k, v := range r.Header {
-		s += fmt.Sprintln("Response Header Key: ", k, "Value: ", v)
+	results := Results{}
+	for testResult := range doneChan {
+		results.Add(testResult)
 	}
 
-	return s
+	return results
 }
 
-// Session struct
-type Session struct {
-	Cookies *cookiejar.Jar
+func worker(wg *sync.WaitGroup, id int, todoChan chan RestTest, doneChan chan<- RestTest) {
+	for todoTest := range todoChan {
+		doneTest := DoAndVerify(todoTest)
+		newTests := generateNewTestsFromResponse(doneTest)
+		for _, newTest := range newTests {
+			todoChan <- newTest
+			wg.Add(1)
+		}
+
+		doneChan <- doneTest
+		wg.Done()
+	}
 }

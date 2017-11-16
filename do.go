@@ -2,79 +2,86 @@ package gorest
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"os"
 	"time"
 )
 
-// Do execute the HTTP request
-func Do(session *Session, request Request) (Response, error) {
-	return do(session, request, true)
-}
+// DoAndVerify DoAndVerify
+func DoAndVerify(restTest RestTest) RestTest {
+	restTest, err := Do(restTest)
 
-// DoWithoutFollowRedirects execute the HTTP request without following redirects
-func DoWithoutFollowRedirects(session *Session, request Request) (Response, error) {
-	return do(session, request, false)
-}
+	request := restTest.RestRequest
+	response := restTest.RestResponse
 
-// NewSession generates blank session
-func NewSession() *Session {
-	session := &Session{}
-	session.Cookies, _ = cookiejar.New(nil)
-	return session
-}
-
-func do(session *Session, request Request, followRedirects bool) (Response, error) {
-	if session.Cookies == nil {
-		session.Cookies, _ = cookiejar.New(nil)
+	if err != nil {
+		fmt.Println("FATAL: There was an error excuting the rest request: ", request, "With Error: ", err.Error())
+		os.Exit(1)
 	}
+
+	if response.StatusCode != restTest.ExpectedStatusCode {
+		fmt.Println("** WARNING: with ", request.URL.RequestURI(), " Expecting Status Code: ", restTest.ExpectedStatusCode, ", Recieved: ", response.StatusCode, " **")
+	}
+
+	fmt.Println("LOG: with ", request.URL.RequestURI(), " Elasped Time ", restTest.ElapsedTime)
+
+	return restTest
+}
+
+// Do execute the HTTP request
+func Do(restTest RestTest) (RestTest, error) {
+	restRequest := restTest.RestRequest
 
 	var client *http.Client
 
-	if followRedirects {
-		client = &http.Client{Jar: session.Cookies}
+	if restRequest.FollowRedirects {
+		client = &http.Client{Jar: restRequest.Cookies}
 	} else {
 		client = &http.Client{
-			Jar: session.Cookies,
+			Jar: restRequest.Cookies,
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
 		}
 	}
 
-	req, err := http.NewRequest(request.Method, request.URL.String(), bytes.NewReader(request.Body))
+	httpRequest, err := http.NewRequest(restRequest.Method, restRequest.URL.String(), bytes.NewReader(restRequest.Body))
 
 	if err != nil {
-		return Response{}, err
+		return restTest, err
 	}
 
-	req.Close = true
-	req.Header = request.Header
+	httpRequest.Close = true
+	httpRequest.Header = restRequest.Headers
 
 	start := time.Now()
-	resp, err := client.Do(req)
+	httpResponse, err := client.Do(httpRequest)
 
 	if err != nil {
-		return Response{}, err
+		return restTest, err
 	}
 
-	defer resp.Body.Close()
+	defer httpResponse.Body.Close()
 
-	var response Response
-	response.ElapsedTime = time.Since(start).Seconds()
-	response.Description = request.Description
+	var restResponse RestResponse
+	restTest.ElapsedTime = time.Since(start).Seconds()
 
-	contents, err := ioutil.ReadAll(resp.Body)
+	contents, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
-		return Response{}, err
+		return restTest, err
 	}
 
-	session.Cookies.SetCookies(&request.URL, resp.Cookies())
+	restResponse.Cookies, _ = cookiejar.New(nil)
+	restResponse.Cookies.SetCookies(&restRequest.URL, httpResponse.Cookies())
 
-	response.Body = contents
-	response.Header = resp.Header
-	response.StatusCode = resp.StatusCode
+	restResponse.Body = contents
+	restResponse.Headers = httpResponse.Header
+	restResponse.StatusCode = httpResponse.StatusCode
 
-	return response, nil
+	restTest.RestResponse = restResponse
+
+	return restTest, nil
 }
