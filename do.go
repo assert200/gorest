@@ -2,32 +2,49 @@ package gorest
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"os"
 	"time"
 )
 
 // DoAndVerify DoAndVerify
 func DoAndVerify(restTest RestTest) RestTest {
+	var verifyErrors []error
+
 	restTest, err := Do(restTest)
 
 	request := restTest.RestRequest
 	response := restTest.RestResponse
 
 	if err != nil {
-		fmt.Println("FATAL: There was an error excuting the rest request: ", request, "With Error: ", err.Error())
-		os.Exit(1)
+		verifyErrors = append(verifyErrors, err)
+	} else {
+		if response.StatusCode != restTest.ExpectedStatusCode {
+			errorMsg := fmt.Sprintf("Expecting Status Code: %d Recieved: %d", restTest.ExpectedStatusCode, response.StatusCode)
+			verifyErrors = append(verifyErrors, errors.New(errorMsg))
+		}
+
+		for _, bodyExpectation := range restTest.BodyExpectations {
+			if !bodyExpectation.MatchString(string(restTest.RestResponse.Body)) {
+				errorMsg := fmt.Sprintf("Body expectation %v was not met", bodyExpectation)
+				verifyErrors = append(verifyErrors, errors.New(errorMsg))
+			}
+		}
+
+		for _, bodyRefusal := range restTest.BodyRefusals {
+			if bodyRefusal.MatchString(string(restTest.RestResponse.Body)) {
+				errorMsg := fmt.Sprintf("Body refusal %v was detected", bodyRefusal)
+				verifyErrors = append(verifyErrors, errors.New(errorMsg))
+			}
+		}
 	}
 
-	if response.StatusCode != restTest.ExpectedStatusCode {
-		fmt.Println("** WARNING: with ", request.URL.RequestURI(), " Expecting Status Code: ", restTest.ExpectedStatusCode, ", Recieved: ", response.StatusCode, " **")
-	}
+	fmt.Printf("LOG: %s Elasped Time: %f Errors: %v \n", request.URL.RequestURI(), restTest.ElapsedTime, verifyErrors)
 
-	fmt.Println("LOG: with ", request.URL.RequestURI(), " Elasped Time ", restTest.ElapsedTime)
-
+	restTest.Errors = verifyErrors
 	return restTest
 }
 

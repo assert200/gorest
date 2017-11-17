@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 )
 
 // RestRequest struct
@@ -70,8 +71,9 @@ type RestTest struct {
 	Values             map[string]string
 	ElapsedTime        float64
 	ExpectedStatusCode int
-	//ExpectedBodyBlackList      []regexp.Regexp
-	//ExpectedBodyWhiteList      []regexp.Regexp
+	BodyExpectations   []*regexp.Regexp
+	BodyRefusals       []*regexp.Regexp
+	Errors             []error
 }
 
 // Result Result
