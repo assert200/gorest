@@ -58,10 +58,14 @@ func (r RestResponse) String() string {
 	return s
 }
 
+// A Generator creates new tests from responses from existing tests
+type Generator func(restTestResponse RestTest) (newTests []RestTest)
+
 // RestTest struct
 type RestTest struct {
 	RestRequest        RestRequest
 	RestResponse       RestResponse
+	Generator          Generator
 	Description        string
 	Values             map[string]string
 	ElapsedTime        float64

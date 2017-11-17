@@ -42,10 +42,13 @@ func Start(workers int) Results {
 func worker(wg *sync.WaitGroup, id int, todoChan chan RestTest, doneChan chan<- RestTest) {
 	for todoTest := range todoChan {
 		doneTest := DoAndVerify(todoTest)
-		newTests := generateNewTestsFromResponse(doneTest)
-		for _, newTest := range newTests {
-			todoChan <- newTest
-			wg.Add(1)
+		if todoTest.Generator != nil {
+			newTests := todoTest.Generator(doneTest)
+
+			for _, newTest := range newTests {
+				todoChan <- newTest
+				wg.Add(1)
+			}
 		}
 
 		doneChan <- doneTest
