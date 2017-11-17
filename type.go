@@ -79,13 +79,15 @@ type RestTest struct {
 // Result Result
 type Result struct {
 	TotalElaspedTime float64
-	TotalRequests    float64
+	TotalRequests    int
+	TotalErrors      int
 }
 
 func (r Result) String() string {
 	s := fmt.Sprintf("Total Elapsed Time: %f\n", r.TotalElaspedTime)
-	s += fmt.Sprintf("Total Requests: %f\n", r.TotalRequests)
-	s += fmt.Sprintf("Avg Request Time: %f\n", r.TotalElaspedTime/r.TotalRequests)
+	s += fmt.Sprintf("Total Requests: %d\n", r.TotalRequests)
+	s += fmt.Sprintf("Total Errors: %d\n", r.TotalErrors)
+	s += fmt.Sprintf("Avg Request Time: %f\n", r.TotalElaspedTime/float64(r.TotalRequests))
 
 	return s
 }
@@ -99,11 +101,13 @@ func (rs Results) Add(restTest RestTest) {
 		var result Result
 		result.TotalElaspedTime = restTest.ElapsedTime
 		result.TotalRequests = 1
+		result.TotalErrors = len(restTest.Errors)
 
 		rs[restTest.Description] = &result
 	} else {
 		rs[restTest.Description].TotalElaspedTime += restTest.ElapsedTime
 		rs[restTest.Description].TotalRequests++
+		rs[restTest.Description].TotalErrors += len(restTest.Errors)
 	}
 }
 
