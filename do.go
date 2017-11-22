@@ -29,7 +29,7 @@ func DoAndVerify(restTest RestTest) RestTest {
 
 		for _, bodyExpectation := range restTest.BodyExpectations {
 			if !bodyExpectation.MatchString(string(restTest.RestResponse.Body)) {
-				errorMsg := fmt.Sprintf("Body expectation %v was not met", bodyExpectation)
+				errorMsg := fmt.Sprintf("Body expectation %v was not met: %s", bodyExpectation, string(restTest.RestResponse.Body))
 				verifyErrors = append(verifyErrors, errors.New(errorMsg))
 			}
 		}
@@ -42,7 +42,7 @@ func DoAndVerify(restTest RestTest) RestTest {
 		}
 	}
 
-	fmt.Printf("LOG: %s Elasped Time: %f Errors: %v \n", request.URL.RequestURI(), restTest.ElapsedTime, verifyErrors)
+	fmt.Printf("LOG: %s %s Elasped Time: %f Errors: %v \n", restTest.Description, request.URL.RequestURI(), restTest.ElapsedTime, verifyErrors)
 
 	restTest.Errors = verifyErrors
 	return restTest
