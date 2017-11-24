@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"time"
 )
 
@@ -65,7 +66,8 @@ func Do(restTest RestTest) (RestTest, error) {
 		}
 	}
 
-	httpRequest, err := http.NewRequest(restRequest.Method, restRequest.URL.String(), bytes.NewReader(restRequest.Body))
+	URLUnescaped, _ := url.PathUnescape(restRequest.URL.String())
+	httpRequest, err := http.NewRequest(restRequest.Method, URLUnescaped, bytes.NewReader(restRequest.Body))
 
 	if err != nil {
 		return restTest, err
