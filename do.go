@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"time"
 )
@@ -56,10 +55,10 @@ func Do(restTest RestTest) (RestTest, error) {
 	var client *http.Client
 
 	if restRequest.FollowRedirects {
-		client = &http.Client{Jar: restRequest.Cookies}
+		client = &http.Client{ /*Jar: restRequest.Cookies*/ }
 	} else {
 		client = &http.Client{
-			Jar: restRequest.Cookies,
+			/* Jar: restRequest.Cookies, */
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
@@ -93,8 +92,8 @@ func Do(restTest RestTest) (RestTest, error) {
 		return restTest, err
 	}
 
-	restResponse.Cookies, _ = cookiejar.New(nil)
-	restResponse.Cookies.SetCookies(&restRequest.URL, httpResponse.Cookies())
+	//restResponse.Cookies, _ = cookiejar.New(nil)
+	//restResponse.Cookies.SetCookies(&restRequest.URL, httpResponse.Cookies())
 
 	restResponse.Body = contents
 	restResponse.Headers = httpResponse.Header

@@ -10,10 +10,10 @@ import (
 
 // RestRequest struct
 type RestRequest struct {
-	Body            []byte
-	Method          string
-	Headers         http.Header
-	Cookies         *cookiejar.Jar
+	Body    []byte
+	Method  string
+	Headers http.Header
+	//Cookies         *cookiejar.Jar //TODO: This implementation is not thread safe
 	URL             url.URL
 	FollowRedirects bool
 }
@@ -23,7 +23,7 @@ func NewRestRequest() RestRequest {
 	restRequest := RestRequest{}
 	restRequest.Headers = http.Header{}
 	restRequest.FollowRedirects = true
-	restRequest.Cookies, _ = cookiejar.New(nil)
+	//restRequest.Cookies, _ = cookiejar.New(nil)
 
 	return restRequest
 }
