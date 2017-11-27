@@ -112,10 +112,17 @@ func (rs Results) Add(restTest RestTest) {
 }
 
 func (rs Results) String() string {
+	var totalResult Result
 	var s string
-	for key, tally := range rs {
-		s += fmt.Sprintln(key, " ", tally)
+	for key, result := range rs {
+		totalResult.TotalElaspedTime += result.TotalElaspedTime
+		totalResult.TotalErrors += result.TotalErrors
+		totalResult.TotalRequests += result.TotalRequests
+
+		s += fmt.Sprintln(key, " ", result)
 	}
+
+	s += fmt.Sprintln("\n-TOTAL RESULT-: ", totalResult)
 
 	return s
 }
