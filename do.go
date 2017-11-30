@@ -85,9 +85,9 @@ func Do(restTest RestTest) (RestTest, error) {
 	defer httpResponse.Body.Close()
 
 	var restResponse RestResponse
-	restTest.ElapsedTime = time.Since(start).Seconds()
 
 	contents, err := ioutil.ReadAll(httpResponse.Body)
+	restTest.ElapsedTime = time.Since(start).Seconds()
 	if err != nil {
 		return restTest, err
 	}
