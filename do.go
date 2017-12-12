@@ -42,7 +42,7 @@ func DoAndVerify(restTest RestTest) RestTest {
 		}
 	}
 
-	fmt.Printf("LOG: %s %s Elasped Time: %f Errors: %v \n", restTest.Description, request.URL.RequestURI(), restTest.ElapsedTime, verifyErrors)
+	fmt.Printf("LOG: %s %s Elasped Time: %f Errors: %v \n", restTest.Description, request.URL.Path, restTest.ElapsedTime, verifyErrors)
 
 	restTest.Errors = verifyErrors
 	return restTest
