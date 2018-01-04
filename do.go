@@ -41,8 +41,8 @@ func DoAndVerify(restTest RestTest) RestTest {
 			}
 		}
 	}
-
-	fmt.Printf("LOG: %s %s Elasped Time: %f Errors: %v \n", restTest.Description, request.URL.Path, restTest.ElapsedTime, verifyErrors)
+	URLUnescaped, _ := url.PathUnescape(request.URL.String())
+	fmt.Printf("LOG: %s %s Elasped Time: %f Errors: %v \n", restTest.Description, URLUnescaped, restTest.ElapsedTime, verifyErrors)
 
 	restTest.Errors = verifyErrors
 	return restTest
