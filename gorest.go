@@ -22,6 +22,8 @@ func Start(workers int) Results {
 		wg.Add(1)
 	}
 
+	firstRestTests = nil
+
 	for w := 1; w <= workers; w++ {
 		go worker(&wg, w, todoChan, doneChan)
 	}
