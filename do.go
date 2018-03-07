@@ -23,7 +23,7 @@ func DoAndVerify(restTest RestTest) RestTest {
 		verifyErrors = append(verifyErrors, err)
 	} else {
 		if response.StatusCode != restTest.ExpectedStatusCode {
-			errorMsg := fmt.Sprintf("Expecting Status Code: %d Recieved: %d", restTest.ExpectedStatusCode, response.StatusCode)
+			errorMsg := fmt.Sprintf("Expecting Status Code: %d Received: %d", restTest.ExpectedStatusCode, response.StatusCode)
 			verifyErrors = append(verifyErrors, errors.New(errorMsg))
 		}
 
