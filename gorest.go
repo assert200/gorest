@@ -14,8 +14,8 @@ func Prime(newRestTest RestTest) {
 
 //Start Start
 func Start(workers int) Results {
-	todoChan := make(chan RestTest, 10000)
-	doneChan := make(chan RestTest, 10000)
+	todoChan := make(chan RestTest, 100000)
+	doneChan := make(chan RestTest, 100000)
 
 	for _, firstRestTest := range firstRestTests {
 		todoChan <- firstRestTest

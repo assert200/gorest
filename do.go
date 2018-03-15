@@ -42,7 +42,7 @@ func DoAndVerify(restTest RestTest) RestTest {
 		}
 	}
 	URLUnescaped, _ := url.PathUnescape(request.URL.String())
-	fmt.Printf("LOG: %s %s Elasped Time: %f Errors: %v \n", restTest.Description, URLUnescaped, restTest.ElapsedTime, verifyErrors)
+	fmt.Printf("LOG: %s %s RequestTime: %f Errors: %v \n", restTest.Description, URLUnescaped, restTest.RequestTime, verifyErrors)
 
 	restTest.Errors = verifyErrors
 	return restTest
@@ -87,7 +87,7 @@ func Do(restTest RestTest) (RestTest, error) {
 	var restResponse RestResponse
 
 	contents, err := ioutil.ReadAll(httpResponse.Body)
-	restTest.ElapsedTime = time.Since(start).Seconds()
+	restTest.RequestTime = time.Since(start).Seconds()
 	if err != nil {
 		return restTest, err
 	}

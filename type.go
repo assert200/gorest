@@ -69,7 +69,7 @@ type RestTest struct {
 	Generator          Generator
 	Description        string
 	Values             map[string]string
-	ElapsedTime        float64
+	RequestTime        float64
 	ExpectedStatusCode int
 	BodyExpectations   []*regexp.Regexp
 	BodyRefusals       []*regexp.Regexp
@@ -78,18 +78,15 @@ type RestTest struct {
 
 // Result Result
 type Result struct {
-	TotalElaspedTime float64
-	TotalRequests    int
-	TotalErrors      int
+	ShortestRequestTime float64
+	LongestRequestTime  float64
+	TotalElapsedTime    float64
+	TotalRequests       int
+	TotalErrors         int
 }
 
 func (r Result) String() string {
-	s := fmt.Sprintf("Total Elapsed Time: %f\n", r.TotalElaspedTime)
-	s += fmt.Sprintf("Total Requests: %d\n", r.TotalRequests)
-	s += fmt.Sprintf("Total Errors: %d\n", r.TotalErrors)
-	s += fmt.Sprintf("Avg Request Time: %f\n", r.TotalElaspedTime/float64(r.TotalRequests))
-
-	return s
+	return fmt.Sprintf("AvgReq, %f, Variance, %f, ShortestReq, %f, LongestReq, %f, TotalElapsed, %f, TotalReqs, %d, TotalErrors, %d", r.TotalElapsedTime/float64(r.TotalRequests), (r.LongestRequestTime - r.ShortestRequestTime), r.ShortestRequestTime, r.LongestRequestTime, r.TotalElapsedTime, r.TotalRequests, r.TotalErrors)
 }
 
 //Results Results
@@ -99,13 +96,22 @@ type Results map[string]*Result
 func (rs Results) Add(restTest RestTest) {
 	if _, ok := rs[restTest.Description]; !ok {
 		var result Result
-		result.TotalElaspedTime = restTest.ElapsedTime
+		result.ShortestRequestTime = restTest.RequestTime
+		result.LongestRequestTime = restTest.RequestTime
+		result.TotalElapsedTime = restTest.RequestTime
 		result.TotalRequests = 1
 		result.TotalErrors = len(restTest.Errors)
 
 		rs[restTest.Description] = &result
 	} else {
-		rs[restTest.Description].TotalElaspedTime += restTest.ElapsedTime
+
+		if restTest.RequestTime < rs[restTest.Description].ShortestRequestTime {
+			rs[restTest.Description].ShortestRequestTime = restTest.RequestTime
+		}
+		if restTest.RequestTime > rs[restTest.Description].LongestRequestTime {
+			rs[restTest.Description].LongestRequestTime = restTest.RequestTime
+		}
+		rs[restTest.Description].TotalElapsedTime += restTest.RequestTime
 		rs[restTest.Description].TotalRequests++
 		rs[restTest.Description].TotalErrors += len(restTest.Errors)
 	}
@@ -114,15 +120,30 @@ func (rs Results) Add(restTest RestTest) {
 func (rs Results) String() string {
 	var totalResult Result
 	var s string
+
+	firstResult := true
 	for key, result := range rs {
-		totalResult.TotalElaspedTime += result.TotalElaspedTime
+		if firstResult {
+			totalResult.ShortestRequestTime = result.ShortestRequestTime
+			totalResult.LongestRequestTime = result.LongestRequestTime
+			firstResult = false
+		} else {
+			if result.ShortestRequestTime < totalResult.ShortestRequestTime {
+				totalResult.ShortestRequestTime = result.ShortestRequestTime
+			}
+			if result.LongestRequestTime > totalResult.LongestRequestTime {
+				totalResult.LongestRequestTime = result.LongestRequestTime
+			}
+		}
+
+		totalResult.TotalElapsedTime += result.TotalElapsedTime
 		totalResult.TotalErrors += result.TotalErrors
 		totalResult.TotalRequests += result.TotalRequests
 
-		s += fmt.Sprintln(key, " ", result)
+		s += fmt.Sprintln(key, ",", result)
 	}
 
-	s += fmt.Sprintln("\n-TOTAL RESULT-: ", totalResult)
+	s += fmt.Sprintln("TOTAL RESULT,", totalResult)
 
 	return s
 }
