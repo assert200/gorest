@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+        "net/http/cookiejar"
 	"net/url"
 	"time"
 )
