@@ -56,10 +56,10 @@ func Do(restTest RestTest) (RestTest, error) {
 	var client *http.Client
 
 	if restRequest.FollowRedirects {
-		client = &http.Client{ /*Jar: restRequest.Cookies*/ }
+		client = &http.Client{ Jar: restRequest.Cookies }
 	} else {
 		client = &http.Client{
-			/* Jar: restRequest.Cookies, */
+			Jar: restRequest.Cookies, 
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
