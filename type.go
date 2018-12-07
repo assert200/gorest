@@ -36,6 +36,8 @@ func (r RestRequest) String() string {
 	for k, v := range r.Headers {
 		s += fmt.Sprintln("Request Header Key: ", k, "Value: ", v)
 	}
+	
+	s += fmt.Sprintf("Response Cookies: %v\n", r.Cookies)
 
 	return s
 }
