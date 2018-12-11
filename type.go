@@ -31,13 +31,13 @@ func NewRestRequest() RestRequest {
 func (r RestRequest) String() string {
 	s := fmt.Sprintf("Request URL: %s\n", r.URL.String())
 	s += fmt.Sprintf("Request Method: %s\n", r.Method)
-	s += fmt.Sprintf("Response Body: %s\n", r.Body)
+	s += fmt.Sprintf("Request Body: %s\n", r.Body)
 
 	for k, v := range r.Headers {
 		s += fmt.Sprintln("Request Header Key: ", k, "Value: ", v)
 	}
 	
-	s += fmt.Sprintf("Response Cookies: %v\n", r.Cookies)
+	s += fmt.Sprintf("Request Cookies: %v\n", r.Cookies)
 
 	return s
 }
