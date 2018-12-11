@@ -6,16 +6,18 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"regexp"
+	"time"
 )
 
 // RestRequest struct
 type RestRequest struct {
-	Body    []byte
-	Method  string
-	Headers http.Header
-	Cookies         *cookiejar.Jar 
+	Body            []byte
+	Method          string
+	Headers         http.Header
+	Cookies         *cookiejar.Jar
 	URL             url.URL
 	FollowRedirects bool
+	Delay           time.Duration
 }
 
 // NewRestRequest factory
@@ -36,7 +38,7 @@ func (r RestRequest) String() string {
 	for k, v := range r.Headers {
 		s += fmt.Sprintln("Request Header Key: ", k, "Value: ", v)
 	}
-	
+
 	s += fmt.Sprintf("Request Cookies: %v\n", r.Cookies)
 
 	return s
@@ -57,7 +59,7 @@ func (r RestResponse) String() string {
 	for k, v := range r.Headers {
 		s += fmt.Sprintln("Response Header Key: ", k, "Value: ", v)
 	}
-	
+
 	s += fmt.Sprintf("Response Cookies: %v\n", r.Cookies)
 
 	return s
