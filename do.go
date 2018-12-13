@@ -95,7 +95,16 @@ func Do(restTest RestTest) (RestTest, error) {
 		return restTest, err
 	}
 
-	restResponse.Cookies, _ = cookiejar.New(nil)
+	if restResponse.Cookies == nil {
+		restResponse.Cookies, err = cookiejar.New(nil)
+		if err != nil {
+			panic(err)
+		}
+
+	} else {
+		restResponse.Cookies.SetCookies(&restRequest.URL, httpRequest.Cookies())
+	}
+
 	restResponse.Cookies.SetCookies(&restRequest.URL, httpResponse.Cookies())
 
 	restResponse.Body = contents
