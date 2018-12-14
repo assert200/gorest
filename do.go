@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"net/http/cookiejar"
 )
 
 // DoAndVerify DoAndVerify
