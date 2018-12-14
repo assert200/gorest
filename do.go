@@ -95,7 +95,7 @@ func Do(restTest RestTest) (RestTest, error) {
 		return restTest, err
 	}
 
-	restResponse.Cookies, err := cookiejar.New(nil)
+	restResponse.Cookies, err = cookiejar.New(nil)
 	if (err!=nil) {
 		panic(err)
 	}
