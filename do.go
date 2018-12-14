@@ -100,7 +100,6 @@ func Do(restTest RestTest) (RestTest, error) {
 		panic(err)
 	}
 	
-	restResponse.Cookies.SetCookies(&restRequest.URL, httpRequest.Cookies())
 	restResponse.Cookies.SetCookies(&restRequest.URL, httpResponse.Cookies())
 
 	restResponse.Body = contents
