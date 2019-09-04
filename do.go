@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"time"
-	"net/http/cookiejar"
 )
 
 // DoAndVerify DoAndVerify
@@ -96,10 +96,12 @@ func Do(restTest RestTest) (RestTest, error) {
 	}
 
 	restResponse.Cookies, err = cookiejar.New(nil)
-	if (err!=nil) {
+	if err != nil {
 		panic(err)
 	}
-	
+
+	// Cookies are httpRequest and the httpResponse so get them all
+	restResponse.Cookies.SetCookies(&restRequest.URL, httpRequest.Cookies())
 	restResponse.Cookies.SetCookies(&restRequest.URL, httpResponse.Cookies())
 
 	restResponse.Body = contents
