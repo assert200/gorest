@@ -14,7 +14,7 @@ type RestRequest struct {
 	Body            []byte
 	Method          string
 	Headers         http.Header
-	Cookies         *cookiejar.Jar
+	CookiesJar      *cookiejar.Jar
 	URL             url.URL
 	FollowRedirects bool
 	Delay           time.Duration
@@ -25,7 +25,7 @@ func NewRestRequest() RestRequest {
 	restRequest := RestRequest{}
 	restRequest.Headers = http.Header{}
 	restRequest.FollowRedirects = true
-	restRequest.Cookies, _ = cookiejar.New(nil)
+	restRequest.CookiesJar, _ = cookiejar.New(nil)
 
 	return restRequest
 }
@@ -39,7 +39,7 @@ func (r RestRequest) String() string {
 		s += fmt.Sprintln("Request Header Key: ", k, "Value: ", v)
 	}
 
-	s += fmt.Sprintf("Request Cookies: %v\n", r.Cookies)
+	s += fmt.Sprintf("Request Cookies: %v\n", r.CookiesJar)
 
 	return s
 }
@@ -48,7 +48,7 @@ func (r RestRequest) String() string {
 type RestResponse struct {
 	Body       []byte
 	Headers    http.Header
-	Cookies    *cookiejar.Jar
+	CookiesJar *cookiejar.Jar
 	StatusCode int
 }
 
@@ -60,7 +60,7 @@ func (r RestResponse) String() string {
 		s += fmt.Sprintln("Response Header Key: ", k, "Value: ", v)
 	}
 
-	s += fmt.Sprintf("Response Cookies: %v\n", r.Cookies)
+	s += fmt.Sprintf("Response Cookies: %v\n", r.CookiesJar)
 
 	return s
 }
