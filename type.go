@@ -25,7 +25,7 @@ func NewRestRequest() RestRequest {
 	restRequest := RestRequest{}
 	restRequest.Headers = http.Header{}
 	restRequest.FollowRedirects = true
-	restRequest.CookiesJar, _ = cookiejar.New(nil)
+	restRequest.CookieJar, _ = cookiejar.New(nil)
 
 	return restRequest
 }
@@ -39,7 +39,7 @@ func (r RestRequest) String() string {
 		s += fmt.Sprintln("Request Header Key: ", k, "Value: ", v)
 	}
 
-	s += fmt.Sprintf("Request Cookies: %v\n", r.CookiesJar)
+	s += fmt.Sprintf("Request Cookies: %v\n", r.CookieJar)
 
 	return s
 }
@@ -60,7 +60,7 @@ func (r RestResponse) String() string {
 		s += fmt.Sprintln("Response Header Key: ", k, "Value: ", v)
 	}
 
-	s += fmt.Sprintf("Response Cookies: %v\n", r.CookiesJar)
+	s += fmt.Sprintf("Response Cookies: %v\n", r.CookieJar)
 
 	return s
 }
