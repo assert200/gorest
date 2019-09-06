@@ -14,7 +14,7 @@ type RestRequest struct {
 	Body            []byte
 	Method          string
 	Headers         http.Header
-	CookiesJar      *cookiejar.Jar
+	CookieJar       *cookiejar.Jar
 	URL             url.URL
 	FollowRedirects bool
 	Delay           time.Duration
@@ -48,7 +48,7 @@ func (r RestRequest) String() string {
 type RestResponse struct {
 	Body       []byte
 	Headers    http.Header
-	CookiesJar *cookiejar.Jar
+	CookieJar  *cookiejar.Jar
 	StatusCode int
 }
 
