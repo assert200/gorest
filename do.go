@@ -102,6 +102,7 @@ func Do(restTest RestTest) (RestTest, error) {
 	restTest.RestResponse = restResponse
 
 	var restTestResult RestTestResult
+	restTestResult.Description = restTest.Description
 	restTestResult.URLUnescaped, err = url.PathUnescape(restRequest.URL.String())
 	if err != nil {
 		panic(err)

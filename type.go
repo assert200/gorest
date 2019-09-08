@@ -103,6 +103,7 @@ type ResultTally struct {
 	ShortestRequestDuration float64 `json:"shortestRequestDuration"`
 	LongestRequestDuration  float64 `json:"longestRequestDuration"`
 	TotalElapsedDuration    float64 `json:"totalElapsedDuration"`
+	AverageDuration         float64 `json:"averageDuration"`
 	TotalRequests           int     `json:"totalRequests"`
 	TotalErrors             int     `json:"totalErrors"`
 }
@@ -122,6 +123,7 @@ func (rs ResultTallys) Add(restTest RestTest) {
 		result.ShortestRequestDuration = restTest.RestTestResult.RequestDuration
 		result.LongestRequestDuration = restTest.RestTestResult.RequestDuration
 		result.TotalElapsedDuration = restTest.RestTestResult.RequestDuration
+		result.AverageDuration = restTest.RestTestResult.RequestDuration
 		result.TotalRequests = 1
 		result.TotalErrors = len(restTest.RestTestResult.Errors)
 
@@ -136,6 +138,8 @@ func (rs ResultTallys) Add(restTest RestTest) {
 		}
 		rs[restTest.Description].TotalElapsedDuration += restTest.RestTestResult.RequestDuration
 		rs[restTest.Description].TotalRequests++
+		rs[restTest.Description].AverageDuration = rs[restTest.Description].TotalElapsedDuration / float64(rs[restTest.Description].TotalRequests)
+
 		rs[restTest.Description].TotalErrors += len(restTest.RestTestResult.Errors)
 	}
 }
