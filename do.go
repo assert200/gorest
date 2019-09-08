@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -16,7 +17,6 @@ func DoAndVerify(restTest RestTest) RestTest {
 
 	restTest, err := Do(restTest)
 
-	request := restTest.RestRequest
 	response := restTest.RestResponse
 
 	if err != nil {
@@ -41,10 +41,10 @@ func DoAndVerify(restTest RestTest) RestTest {
 			}
 		}
 	}
-	URLUnescaped, _ := url.PathUnescape(request.URL.String())
-	fmt.Printf("LOG: %s %s RequestTime: %f Errors: %v \n", restTest.Description, URLUnescaped, restTest.RequestTime, verifyErrors)
 
-	restTest.Errors = verifyErrors
+	restTest.RestTestResult.Errors = verifyErrors
+
+	log.Println(restTest.RestTestResult)
 	return restTest
 }
 
@@ -79,7 +79,7 @@ func Do(restTest RestTest) (RestTest, error) {
 
 	start := time.Now()
 	httpResponse, err := client.Do(httpRequest)
-
+	end := time.Now()
 	if err != nil {
 		return restTest, err
 	}
@@ -89,7 +89,7 @@ func Do(restTest RestTest) (RestTest, error) {
 	var restResponse RestResponse
 
 	contents, err := ioutil.ReadAll(httpResponse.Body)
-	restTest.RequestTime = time.Since(start).Seconds()
+
 	if err != nil {
 		return restTest, err
 	}
@@ -99,8 +99,18 @@ func Do(restTest RestTest) (RestTest, error) {
 	restResponse.Body = contents
 	restResponse.Headers = httpResponse.Header
 	restResponse.StatusCode = httpResponse.StatusCode
-
 	restTest.RestResponse = restResponse
+
+	var restTestResult RestTestResult
+	restTestResult.URLUnescaped, err = url.PathUnescape(restRequest.URL.String())
+	if err != nil {
+		panic(err)
+	}
+	restTestResult.RequestTimeStart = start
+	restTestResult.RequestTimeEnd = end
+	restTestResult.RequestDuration = end.Sub(start).Seconds()
+	restTestResult.StatusCode = httpResponse.StatusCode
+	restTest.RestTestResult = restTestResult
 
 	return restTest, nil
 }

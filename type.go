@@ -1,6 +1,7 @@
 package gorest
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/cookiejar"
@@ -72,84 +73,100 @@ type Generator func(restTestResponse RestTest) (newTests []RestTest)
 type RestTest struct {
 	RestRequest        RestRequest
 	RestResponse       RestResponse
+	RestTestResult     RestTestResult
 	Generator          Generator
 	Description        string
 	Values             map[string]string
-	RequestTime        float64
 	ExpectedStatusCode int
 	BodyExpectations   []*regexp.Regexp
 	BodyRefusals       []*regexp.Regexp
-	Errors             []error
 }
 
-// Result Result
-type Result struct {
-	ShortestRequestTime float64
-	LongestRequestTime  float64
-	TotalElapsedTime    float64
-	TotalRequests       int
-	TotalErrors         int
+// RestTestResult struct
+type RestTestResult struct {
+	Description      string    `json:"description"`
+	URLUnescaped     string    `json:"urlUnescaped"`
+	RequestTimeStart time.Time `json:"requestTimeStart"`
+	RequestTimeEnd   time.Time `json:"requestTimeEnd"`
+	RequestDuration  float64   `json:"requestTimeDuration"`
+	StatusCode       int       `json:"statusCode"`
+	Errors           []error   `json:"errors"`
 }
 
-func (r Result) String() string {
-	return fmt.Sprintf("AvgReq, %f, Variance, %f, ShortestReq, %f, LongestReq, %f, TotalElapsed, %f, TotalReqs, %d, TotalErrors, %d", r.TotalElapsedTime/float64(r.TotalRequests), (r.LongestRequestTime - r.ShortestRequestTime), r.ShortestRequestTime, r.LongestRequestTime, r.TotalElapsedTime, r.TotalRequests, r.TotalErrors)
+func (r RestTestResult) String() string {
+	json, _ := json.Marshal(r)
+	return fmt.Sprintln(string(json))
 }
 
-//Results Results
-type Results map[string]*Result
+// ResultTally is a summary recalculated after each request
+type ResultTally struct {
+	ShortestRequestDuration float64 `json:"shortestRequestDuration"`
+	LongestRequestDuration  float64 `json:"longestRequestDuration"`
+	TotalElapsedDuration    float64 `json:"totalElapsedDuration"`
+	TotalRequests           int     `json:"totalRequests"`
+	TotalErrors             int     `json:"totalErrors"`
+}
+
+func (r ResultTally) String() string {
+	json, _ := json.Marshal(r)
+	return fmt.Sprintln(string(json))
+}
+
+//ResultTallys Is all the result tallys for each type of test
+type ResultTallys map[string]*ResultTally
 
 //Add Add
-func (rs Results) Add(restTest RestTest) {
+func (rs ResultTallys) Add(restTest RestTest) {
 	if _, ok := rs[restTest.Description]; !ok {
-		var result Result
-		result.ShortestRequestTime = restTest.RequestTime
-		result.LongestRequestTime = restTest.RequestTime
-		result.TotalElapsedTime = restTest.RequestTime
+		var result ResultTally
+		result.ShortestRequestDuration = restTest.RestTestResult.RequestDuration
+		result.LongestRequestDuration = restTest.RestTestResult.RequestDuration
+		result.TotalElapsedDuration = restTest.RestTestResult.RequestDuration
 		result.TotalRequests = 1
-		result.TotalErrors = len(restTest.Errors)
+		result.TotalErrors = len(restTest.RestTestResult.Errors)
 
 		rs[restTest.Description] = &result
 	} else {
 
-		if restTest.RequestTime < rs[restTest.Description].ShortestRequestTime {
-			rs[restTest.Description].ShortestRequestTime = restTest.RequestTime
+		if restTest.RestTestResult.RequestDuration < rs[restTest.Description].ShortestRequestDuration {
+			rs[restTest.Description].ShortestRequestDuration = restTest.RestTestResult.RequestDuration
 		}
-		if restTest.RequestTime > rs[restTest.Description].LongestRequestTime {
-			rs[restTest.Description].LongestRequestTime = restTest.RequestTime
+		if restTest.RestTestResult.RequestDuration > rs[restTest.Description].LongestRequestDuration {
+			rs[restTest.Description].LongestRequestDuration = restTest.RestTestResult.RequestDuration
 		}
-		rs[restTest.Description].TotalElapsedTime += restTest.RequestTime
+		rs[restTest.Description].TotalElapsedDuration += restTest.RestTestResult.RequestDuration
 		rs[restTest.Description].TotalRequests++
-		rs[restTest.Description].TotalErrors += len(restTest.Errors)
+		rs[restTest.Description].TotalErrors += len(restTest.RestTestResult.Errors)
 	}
 }
 
-func (rs Results) String() string {
-	var totalResult Result
+func (rs ResultTallys) String() string {
+	var totalResultTally ResultTally
 	var s string
 
 	firstResult := true
 	for key, result := range rs {
 		if firstResult {
-			totalResult.ShortestRequestTime = result.ShortestRequestTime
-			totalResult.LongestRequestTime = result.LongestRequestTime
+			totalResultTally.ShortestRequestDuration = result.ShortestRequestDuration
+			totalResultTally.LongestRequestDuration = result.LongestRequestDuration
 			firstResult = false
 		} else {
-			if result.ShortestRequestTime < totalResult.ShortestRequestTime {
-				totalResult.ShortestRequestTime = result.ShortestRequestTime
+			if result.ShortestRequestDuration < totalResultTally.ShortestRequestDuration {
+				totalResultTally.ShortestRequestDuration = result.ShortestRequestDuration
 			}
-			if result.LongestRequestTime > totalResult.LongestRequestTime {
-				totalResult.LongestRequestTime = result.LongestRequestTime
+			if result.LongestRequestDuration > totalResultTally.LongestRequestDuration {
+				totalResultTally.LongestRequestDuration = result.LongestRequestDuration
 			}
 		}
 
-		totalResult.TotalElapsedTime += result.TotalElapsedTime
-		totalResult.TotalErrors += result.TotalErrors
-		totalResult.TotalRequests += result.TotalRequests
+		totalResultTally.TotalElapsedDuration += result.TotalElapsedDuration
+		totalResultTally.TotalErrors += result.TotalErrors
+		totalResultTally.TotalRequests += result.TotalRequests
 
-		s += fmt.Sprintln(key, ",", result)
+		s += fmt.Sprintf("%s: %s", key, result)
 	}
 
-	s += fmt.Sprintln("TOTAL RESULT,", totalResult)
+	s += fmt.Sprintln("TOTAL RESULT TALLY:", totalResultTally)
 
 	return s
 }

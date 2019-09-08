@@ -13,7 +13,7 @@ func Prime(newRestTest RestTest) {
 }
 
 //Start Start
-func Start(workers int) Results {
+func Start(workers int) ResultTallys {
 	todoChan := make(chan RestTest, 100000)
 	doneChan := make(chan RestTest, 100000)
 
@@ -33,19 +33,19 @@ func Start(workers int) Results {
 	close(todoChan)
 	close(doneChan)
 
-	results := Results{}
-	for testResult := range doneChan {
-		results.Add(testResult)
+	resultTallys := ResultTallys{}
+	for resultTally := range doneChan {
+		resultTallys.Add(resultTally)
 	}
 
-	return results
+	return resultTallys
 }
 
 func worker(wg *sync.WaitGroup, id int, todoChan chan RestTest, doneChan chan<- RestTest) {
 	for todoTest := range todoChan {
 		doneTest := DoAndVerify(todoTest)
 
-		if len(doneTest.Errors) == 0 {
+		if len(doneTest.RestTestResult.Errors) == 0 {
 			if todoTest.Generator != nil {
 				newTests := todoTest.Generator(doneTest)
 
