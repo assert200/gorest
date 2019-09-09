@@ -4,31 +4,37 @@ import (
 	"sync"
 )
 
-var wg sync.WaitGroup
-var firstRestTests []RestTest
+var todoChan, doneChan chan RestTest
 
-// Prime Prime
-func Prime(newRestTest RestTest) {
-	firstRestTests = append(firstRestTests, newRestTest)
-}
+// Test away
+func Test(restTests []RestTest, workers int) ResultTallys {
+	var wg sync.WaitGroup
+	amountOfTests := len(restTests)
 
-//Start Start
-func Start(workers int) ResultTallys {
-	todoChan := make(chan RestTest, 100000)
-	doneChan := make(chan RestTest, 100000)
-
-	for _, firstRestTest := range firstRestTests {
-		todoChan <- firstRestTest
-		wg.Add(1)
-	}
-
-	firstRestTests = nil
+	todoChan = make(chan RestTest, 100000)
+	doneChan = make(chan RestTest, 100000)
 
 	for w := 1; w <= workers; w++ {
 		go worker(&wg, w, todoChan, doneChan)
 	}
 
-	wg.Wait()
+	restTestIndex := 0
+	for restTestIndex < amountOfTests {
+		// Only set tests off in batches of size of worker group
+		for i := 0; i < workers; i++ {
+			todoChan <- restTests[restTestIndex]
+			wg.Add(1)
+
+			restTestIndex++
+
+			if restTestIndex == amountOfTests {
+				break
+			}
+		}
+
+		// Wait utill these tests are complete till kicking off more tests
+		wg.Wait()
+	}
 
 	close(todoChan)
 	close(doneChan)
