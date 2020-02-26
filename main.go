@@ -10,8 +10,10 @@ var executeTestCh, testResultCh chan RestTest
 func RunTest(restTests []RestTest, workers int) ResultTallys {
 	amountOfTests := len(restTests)
 
-	executeTestCh = make(chan RestTest, 1)
-	testResultCh = make(chan RestTest, 1)
+	executeTestCh = make(chan RestTest, 100)
+	testResultCh = make(chan RestTest, 100)
+	defer close(executeTestCh)
+	defer close(testResultCh)
 
 	var testWorkerWG sync.WaitGroup
 	for w := 1; w <= workers; w++ {
@@ -30,12 +32,11 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 		executeTestCh <- restTests[restTestIndex]
 	}
 
+	// Wait for workers to finish
 	testWorkerWG.Wait()
 	newTestWG.Wait()
 
-	close(executeTestCh)
-	close(testResultCh)
-
+	// Get all the results
 	resultTallys := ResultTallys{}
 	for resultTally := range testResultCh {
 		resultTallys.Add(resultTally)
