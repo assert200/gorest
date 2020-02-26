@@ -20,7 +20,7 @@ func Test(restTests []RestTest, workers int) ResultTallys {
 
 	restTestIndex := 0
 	for restTestIndex < amountOfTests {
-		// Only set tests off in batches of size of worker group
+		// Only set tests off in batches of size of testWorker group
 		for i := 0; i < workers; i++ {
 			todoChan <- restTests[restTestIndex]
 			wg.Add(1)
