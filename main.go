@@ -10,8 +10,8 @@ var executeTestCh, testResultCh chan RestTest
 func RunTest(restTests []RestTest, workers int) ResultTallys {
 	amountOfTests := len(restTests)
 
-	executeTestCh = make(chan RestTest, 100000)
-	testResultCh = make(chan RestTest, 100000)
+	executeTestCh = make(chan RestTest, 1)
+	testResultCh = make(chan RestTest, 1)
 
 	var testWorkerWG sync.WaitGroup
 	for w := 1; w <= workers; w++ {
