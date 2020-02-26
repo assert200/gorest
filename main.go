@@ -55,7 +55,7 @@ func testWorker(wg sync.WaitGroup, executeTestCh chan RestTest, testResultCh cha
 	for test := range executeTestCh {
 		result := ExecuteAndVerify(test)
 
-		fmt.Println("testWorker: Adding result '%v$' to channel", result)
+		fmt.Println("testWorker: Adding result to channel")
 		testResultCh <- result
 	}
 
@@ -72,7 +72,7 @@ func newTestWorker(wg sync.WaitGroup, executeTestCh chan<- RestTest, testResultC
 				newTests := result.Generator(result)
 
 				for _, newTest := range newTests {
-					fmt.Println("newTestWorker: Adding newTest '%v$' to channel", newTest)
+					fmt.Println("newTestWorker: Adding newTest to channel")
 					executeTestCh <- newTest
 				}
 			}
