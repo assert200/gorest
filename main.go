@@ -1,6 +1,7 @@
 package gorest
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -36,6 +37,8 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 	testWorkerWG.Wait()
 	newTestWG.Wait()
 
+	fmt.Println("Main waking up....")
+
 	// Get all the results
 	resultTallys := ResultTallys{}
 	for resultTally := range testResultCh {
@@ -48,27 +51,35 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 func testWorker(wg sync.WaitGroup, executeTestCh chan RestTest, testResultCh chan<- RestTest) {
 	defer wg.Done()
 
+	fmt.Println("Starting testWorker")
 	for test := range executeTestCh {
 		result := ExecuteAndVerify(test)
 
+		fmt.Println("testWorker: Adding result '%v$' to channel", result)
 		testResultCh <- result
 	}
+
+	fmt.Println("Finished testWorker")
 }
 
 func newTestWorker(wg sync.WaitGroup, executeTestCh chan<- RestTest, testResultCh chan RestTest) {
 	defer wg.Done()
 
+	fmt.Println("Starting newTestWorker")
 	for result := range testResultCh {
 		if len(result.RestTestResult.Errors) == 0 {
 			if result.Generator != nil {
 				newTests := result.Generator(result)
 
 				for _, newTest := range newTests {
+					fmt.Println("newTestWorker: Adding newTest '%v$' to channel", newTest)
 					executeTestCh <- newTest
 				}
 			}
 		}
 	}
+
+	fmt.Println("Finished newTestWorker")
 }
 
 
