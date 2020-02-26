@@ -55,7 +55,7 @@ func testWorker(wg sync.WaitGroup, executeTestCh chan RestTest, testResultCh cha
 	}
 }
 
-func newTestWorker(wg sync.WaitGroup, executeTestCh chan RestTest, testResultCh chan<- RestTest) {
+func newTestWorker(wg sync.WaitGroup, executeTestCh chan<- RestTest, testResultCh chan RestTest) {
 	defer wg.Done()
 
 	for result := range testResultCh {
