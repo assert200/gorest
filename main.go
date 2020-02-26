@@ -1,6 +1,8 @@
 package gorest
 
-import "time"
+import (
+	"sync"
+)
 
 var executeTestCh, testResultCh chan RestTest
 
@@ -11,12 +13,16 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 	executeTestCh = make(chan RestTest, 100000)
 	testResultCh = make(chan RestTest, 100000)
 
+	var testWorkerWG sync.WaitGroup
 	for w := 1; w <= workers; w++ {
-		go testWorker(executeTestCh, testResultCh)
+		testWorkerWG.Add(1)
+		go testWorker(testWorkerWG, executeTestCh, testResultCh)
 	}
 
+	var newTestWG sync.WaitGroup
 	for n := 1; n <= workers; n++ {
-		go newTestWorker(executeTestCh, testResultCh)
+		newTestWG.Add(1)
+		go newTestWorker(testWorkerWG, executeTestCh, testResultCh)
 	}
 
 	for restTestIndex := 0; restTestIndex < amountOfTests;  restTestIndex++ {
@@ -24,8 +30,9 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 		executeTestCh <- restTests[restTestIndex]
 	}
 
-	// REVISIT
-	time.Sleep(5 * time.Minute)
+	testWorkerWG.Wait()
+	newTestWG.Wait()
+
 	close(executeTestCh)
 	close(testResultCh)
 
@@ -37,7 +44,8 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 	return resultTallys
 }
 
-func testWorker(executeTestCh chan RestTest, testResultCh chan<- RestTest) {
+func testWorker(wg sync.WaitGroup, executeTestCh chan RestTest, testResultCh chan<- RestTest) {
+	defer wg.Done()
 
 	for test := range executeTestCh {
 		result := ExecuteAndVerify(test)
@@ -46,7 +54,8 @@ func testWorker(executeTestCh chan RestTest, testResultCh chan<- RestTest) {
 	}
 }
 
-func newTestWorker(executeTestCh chan RestTest, testResultCh chan<- RestTest) {
+func newTestWorker(wg sync.WaitGroup, executeTestCh chan RestTest, testResultCh chan<- RestTest) {
+	defer wg.Done()
 
 	for result := range testResultCh {
 		if len(result.RestTestResult.Errors) == 0 {
