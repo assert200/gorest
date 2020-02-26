@@ -7,7 +7,7 @@ import (
 var todoChan, doneChan chan RestTest
 
 // Test away
-func Test(restTests []RestTest, workers int) ResultTallys {
+func Test(restTests []RestTest, workers int) (ResultTallys, []RestTestResult) {
 	var wg sync.WaitGroup
 	amountOfTests := len(restTests)
 
@@ -39,12 +39,15 @@ func Test(restTests []RestTest, workers int) ResultTallys {
 	close(todoChan)
 	close(doneChan)
 
+	var allRestTestResults []RestTestResult
+
 	resultTallys := ResultTallys{}
 	for resultTally := range doneChan {
+		allRestTestResults = append(allRestTestResults, resultTally.RestTestResult)
 		resultTallys.Add(resultTally)
 	}
 
-	return resultTallys
+	return resultTallys, allRestTestResults
 }
 
 func worker(wg *sync.WaitGroup, id int, todoChan chan RestTest, doneChan chan<- RestTest) {
