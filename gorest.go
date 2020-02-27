@@ -13,9 +13,9 @@ const (
 func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult) {
 	amountOfTests := len(restTests)
 
-	testCh := make(chan RestTest, 1000)
-	spiderCh := make(chan RestTest, 1000)
-	resultCh := make(chan RestTest, 1000)
+	testCh := make(chan RestTest, 3000)
+	spiderCh := make(chan RestTest, 3000)
+	resultCh := make(chan RestTest, 3000)
 
 	var workerWG sync.WaitGroup
 	for w := 1; w <= workers; w++ {
