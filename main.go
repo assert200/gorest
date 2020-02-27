@@ -1,23 +1,19 @@
 package gorest
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
 
-
 const (
-	SLEEP_FOR = 5 * time.Second
-	MAX_SLEEPS = 20
+	Timeout  = 60 * time.Second
 )
-
 
 // RunTest main entry point
 func RunTest(restTests []RestTest, workers int) ResultTallys {
 	amountOfTests := len(restTests)
 
-	testCh := make(chan RestTest, 100)
+	testCh := NewRestTestChannel(Timeout)
 	spiderCh := make(chan RestTest, 100)
 	resultCh := make(chan RestTest, 100)
 
@@ -38,12 +34,12 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 
 	// initial seed of tests to execute
 	for restTestIndex := 0; restTestIndex < amountOfTests;  restTestIndex++ {
-		testCh <- restTests[restTestIndex]
+		testCh.Write(&restTests[restTestIndex])
 	}
 
 	// Wait for workers to finish
 	workerWG.Wait()
-	close(testCh)
+	testCh.Close()
 	close(spiderCh)
 	close(resultCh)
 
@@ -54,33 +50,21 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 	return *tally
 }
 
-func testWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan<- RestTest) {
+func testWorker(wg sync.WaitGroup, testCh *RestTestChannel, spiderCh chan RestTest) {
 	defer wg.Done()
 
-	/*
-	for test := range testCh {
-		result := ExecuteAndVerify(test)
+	for true {
+		test := testCh.Read()
+		if test == nil {
+			return
+		}
+
+		result := ExecuteAndVerify(*test)
 		spiderCh <- result
 	}
-	 */
-
-	sleeps := 0
-	for sleeps < MAX_SLEEPS {
-		select {
-		case test := <- testCh:
-			sleeps = 0
-			result := ExecuteAndVerify(test)
-			spiderCh <- result
-		default:
-			fmt.Println("worker: no tests waiting...")
-			time.Sleep(SLEEP_FOR)
-			sleeps++
-		}
-	}
-
 }
 
-func spiderWorker(wg sync.WaitGroup, testCh chan<- RestTest, spiderCh chan RestTest, resultCh chan<- RestTest) {
+func spiderWorker(wg sync.WaitGroup, testCh *RestTestChannel, spiderCh chan RestTest, resultCh chan RestTest) {
 	defer wg.Done()
 
 	for result := range spiderCh {
@@ -89,7 +73,7 @@ func spiderWorker(wg sync.WaitGroup, testCh chan<- RestTest, spiderCh chan RestT
 				newTests := result.Generator(result)
 
 				for _, newTest := range newTests {
-					testCh <- newTest
+					testCh.Write(&newTest)
 				}
 			}
 		}
