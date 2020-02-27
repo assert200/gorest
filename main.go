@@ -13,7 +13,7 @@ const (
 func RunTest(restTests []RestTest, workers int) ResultTallys {
 	amountOfTests := len(restTests)
 
-	testCh := NewRestTestChannel(Timeout)
+	testCh := make(chan RestTest, 100)
 	spiderCh := make(chan RestTest, 100)
 	resultCh := make(chan RestTest, 100)
 
@@ -34,12 +34,14 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 
 	// initial seed of tests to execute
 	for restTestIndex := 0; restTestIndex < amountOfTests;  restTestIndex++ {
-		testCh.Write(&restTests[restTestIndex])
+		testCh <- restTests[restTestIndex]
 	}
 
-	// Wait for workers to finish
+	// Wait for workers to finish - exit condition is no new tests in last 60 seconds, and no items in the spideCh
 	workerWG.Wait()
-	testCh.Close()
+
+	// Close all the channels to stop all the spiders and result workers
+	close(testCh)
 	close(spiderCh)
 	close(resultCh)
 
@@ -50,21 +52,27 @@ func RunTest(restTests []RestTest, workers int) ResultTallys {
 	return *tally
 }
 
-func testWorker(wg sync.WaitGroup, testCh *RestTestChannel, spiderCh chan RestTest) {
+func testWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest) {
 	defer wg.Done()
 
 	for true {
-		test := testCh.Read()
-		if test == nil {
-			return
-		}
+		select {
+			case test := <- testCh:
+				result := ExecuteAndVerify(test)
+				spiderCh <- result
 
-		result := ExecuteAndVerify(*test)
-		spiderCh <- result
+			case <-time.After(Timeout):
+				if len(spiderCh) == 0 {
+					// we exit when we have had no new tests in the last Timeout
+					// AND there are nothing left in the spider (so not going to get any more)
+					return
+				}
+				// otherwise wait for some more tests
+		}
 	}
 }
 
-func spiderWorker(wg sync.WaitGroup, testCh *RestTestChannel, spiderCh chan RestTest, resultCh chan RestTest) {
+func spiderWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest, resultCh chan RestTest) {
 	defer wg.Done()
 
 	for result := range spiderCh {
@@ -73,7 +81,7 @@ func spiderWorker(wg sync.WaitGroup, testCh *RestTestChannel, spiderCh chan Rest
 				newTests := result.Generator(result)
 
 				for _, newTest := range newTests {
-					testCh.Write(&newTest)
+					testCh <- newTest
 				}
 			}
 		}
@@ -89,5 +97,4 @@ func resultWorker(wg sync.WaitGroup, resultCh chan RestTest, resultTallys *Resul
 	for resultTally := range resultCh {
 		resultTallys.Add(resultTally)
 	}
-
 }
