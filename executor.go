@@ -11,11 +11,12 @@ import (
 	"time"
 )
 
+
 // DoAndVerify DoAndVerify
-func DoAndVerify(restTest RestTest) RestTest {
+func ExecuteAndVerify(restTest RestTest) RestTest {
 	var verifyErrors []error
 
-	restTest, err := Do(restTest)
+	restTest, err := Execute(restTest)
 
 	response := restTest.RestResponse
 
@@ -48,8 +49,8 @@ func DoAndVerify(restTest RestTest) RestTest {
 	return restTest
 }
 
-// Do execute the HTTP request
-func Do(restTest RestTest) (RestTest, error) {
+// Execute execute the HTTP request
+func Execute(restTest RestTest) (RestTest, error) {
 	restRequest := restTest.RestRequest
 
 	time.Sleep(restRequest.Delay)
@@ -115,3 +116,4 @@ func Do(restTest RestTest) (RestTest, error) {
 
 	return restTest, nil
 }
+

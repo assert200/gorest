@@ -2,70 +2,105 @@ package gorest
 
 import (
 	"sync"
+	"time"
 )
 
-var todoChan, doneChan chan RestTest
+const (
+	Timeout  = 60 * time.Second
+)
 
-// Test away
-func Test(restTests []RestTest, workers int) (ResultTallys, []RestTestResult) {
-	var wg sync.WaitGroup
+// RunTest main entry point
+func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult) {
 	amountOfTests := len(restTests)
 
-	todoChan = make(chan RestTest, 100000)
-	doneChan = make(chan RestTest, 100000)
+	testCh := make(chan RestTest, 100)
+	spiderCh := make(chan RestTest, 100)
+	resultCh := make(chan RestTest, 100)
 
+	var workerWG sync.WaitGroup
 	for w := 1; w <= workers; w++ {
-		go worker(&wg, w, todoChan, doneChan)
+		workerWG.Add(1)
+		go testWorker(workerWG, testCh, spiderCh)
 	}
 
-	restTestIndex := 0
-	for restTestIndex < amountOfTests {
-		// Only set tests off in batches of size of worker group
-		for i := 0; i < workers; i++ {
-			todoChan <- restTests[restTestIndex]
-			wg.Add(1)
+	var spiderWG sync.WaitGroup
+	spiderWG.Add(1)
+	go spiderWorker(spiderWG, testCh, spiderCh, resultCh)
 
-			restTestIndex++
+	var resultsWG sync.WaitGroup
+	var allTests []RestTest
+	resultsWG.Add(1)
+	go resultWorker(resultsWG, resultCh, &allTests)
 
-			if restTestIndex == amountOfTests {
-				break
-			}
-		}
-
-		// Wait utill these tests are complete till kicking off more tests
-		wg.Wait()
+	// initial seed of tests to execute
+	for restTestIndex := 0; restTestIndex < amountOfTests;  restTestIndex++ {
+		testCh <- restTests[restTestIndex]
 	}
 
-	close(todoChan)
-	close(doneChan)
+	// Wait for workers to finish - exit condition is no new tests in last 60 seconds, and no items in the spideCh
+	workerWG.Wait()
 
-	var allRestTestResults []RestTestResult
+	// Close all the channels to stop all the spiders and result workers
+	close(testCh)
+	close(spiderCh)
+	close(resultCh)
 
-	resultTallys := ResultTallys{}
-	for resultTally := range doneChan {
-		allRestTestResults = append(allRestTestResults, resultTally.RestTestResult)
-		resultTallys.Add(resultTally)
+	spiderWG.Wait()
+	resultsWG.Wait()
+
+	// Return all the results
+	var results []RestTestResult
+	tally := ResultTallys{}
+	for _, test := range allTests {
+		results = append(results, test.RestTestResult)
+		tally.Add(test)
 	}
-
-	return resultTallys, allRestTestResults
+	return tally, results
 }
 
-func worker(wg *sync.WaitGroup, id int, todoChan chan RestTest, doneChan chan<- RestTest) {
-	for todoTest := range todoChan {
-		doneTest := DoAndVerify(todoTest)
+func testWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest) {
+	defer wg.Done()
 
-		if len(doneTest.RestTestResult.Errors) == 0 {
-			if todoTest.Generator != nil {
-				newTests := todoTest.Generator(doneTest)
+	for true {
+		select {
+			case test := <- testCh:
+				result := ExecuteAndVerify(test)
+				spiderCh <- result
+
+			case <-time.After(Timeout):
+				if len(spiderCh) == 0 {
+					// we exit when we have had no new tests in the last Timeout
+					// AND there are nothing left in the spider (so not going to get any more)
+					return
+				}
+				// otherwise wait for some more tests
+		}
+	}
+}
+
+func spiderWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest, resultCh chan RestTest) {
+	defer wg.Done()
+
+	for result := range spiderCh {
+		if len(result.RestTestResult.Errors) == 0 {
+			if result.Generator != nil {
+				newTests := result.Generator(result)
 
 				for _, newTest := range newTests {
-					todoChan <- newTest
-					wg.Add(1)
+					testCh <- newTest
 				}
 			}
 		}
 
-		doneChan <- doneTest
-		wg.Done()
+		resultCh <- result
+	}
+}
+
+func resultWorker(wg sync.WaitGroup, resultCh chan RestTest, allTests *[]RestTest) {
+	defer wg.Done()
+
+	// Get all the results
+	for test := range resultCh {
+		*allTests = append(*allTests, test)
 	}
 }
