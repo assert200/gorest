@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	Timeout  = 60 * time.Second
+	Timeout = 60 * time.Second
 )
 
 // RunTest main entry point
@@ -20,20 +20,20 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 	var workerWG sync.WaitGroup
 	for w := 1; w <= workers; w++ {
 		workerWG.Add(1)
-		go testWorker(workerWG, testCh, spiderCh)
+		go testWorker(&workerWG, testCh, spiderCh)
 	}
 
 	var spiderWG sync.WaitGroup
 	spiderWG.Add(1)
-	go spiderWorker(spiderWG, testCh, spiderCh, resultCh)
+	go spiderWorker(&spiderWG, testCh, spiderCh, resultCh)
 
 	var resultsWG sync.WaitGroup
 	var allTests []RestTest
 	resultsWG.Add(1)
-	go resultWorker(resultsWG, resultCh, &allTests)
+	go resultWorker(&resultsWG, resultCh, &allTests)
 
 	// initial seed of tests to execute
-	for restTestIndex := 0; restTestIndex < amountOfTests;  restTestIndex++ {
+	for restTestIndex := 0; restTestIndex < amountOfTests; restTestIndex++ {
 		testCh <- restTests[restTestIndex]
 	}
 
@@ -58,27 +58,27 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 	return tally, results
 }
 
-func testWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest) {
+func testWorker(wg *sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest) {
 	defer wg.Done()
 
 	for true {
 		select {
-			case test := <- testCh:
-				result := ExecuteAndVerify(test)
-				spiderCh <- result
+		case test := <-testCh:
+			result := ExecuteAndVerify(test)
+			spiderCh <- result
 
-			case <-time.After(Timeout):
-				if len(spiderCh) == 0 {
-					// we exit when we have had no new tests in the last Timeout
-					// AND there are nothing left in the spider (so not going to get any more)
-					return
-				}
-				// otherwise wait for some more tests
+		case <-time.After(Timeout):
+			if len(spiderCh) == 0 {
+				// we exit when we have had no new tests in the last Timeout
+				// AND there are nothing left in the spider (so not going to get any more)
+				return
+			}
+			// otherwise wait for some more tests
 		}
 	}
 }
 
-func spiderWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest, resultCh chan RestTest) {
+func spiderWorker(wg *sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTest, resultCh chan RestTest) {
 	defer wg.Done()
 
 	for result := range spiderCh {
@@ -96,7 +96,7 @@ func spiderWorker(wg sync.WaitGroup, testCh chan RestTest, spiderCh chan RestTes
 	}
 }
 
-func resultWorker(wg sync.WaitGroup, resultCh chan RestTest, allTests *[]RestTest) {
+func resultWorker(wg *sync.WaitGroup, resultCh chan RestTest, allTests *[]RestTest) {
 	defer wg.Done()
 
 	// Get all the results
