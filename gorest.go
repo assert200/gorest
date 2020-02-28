@@ -9,14 +9,13 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 	amountOfTests := len(restTests)
 
 	testCh := make(chan RestTest, 10000)
-	resultCh := make(chan RestTest, 10000)
+	resultCh := make(chan RestTest, 100)
 
 	var workWG sync.WaitGroup // All the work to be done
-	var spiderWG sync.WaitGroup
-	var resultsWG sync.WaitGroup
+	var resultsWG sync.WaitGroup // All the results are collated
 
 	for w := 1; w <= workers; w++ {
-		go testWorker(&workWG, testCh, resultCh)
+		go worker(&workWG, testCh, resultCh)
 	}
 
 	var allTests []RestTest
@@ -29,17 +28,12 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 		testCh <- restTests[restTestIndex]
 	}
 
-	// Wait for work to finish
+	// Wait for worker to finish, once it has, it is safe to close the channel
 	workWG.Wait()
-
-	// Clost chanels to tell workers they are done
 	close(testCh)
 
-	// Close all the channels to stop all the spiders and result workers
-
+	// Now it is safe to close the result channel and wait for it to finish
 	close(resultCh)
-
-	spiderWG.Wait()
 	resultsWG.Wait()
 
 	// Return all the results
@@ -52,7 +46,24 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 	return tally, results
 }
 
-func testWorker(workWG *sync.WaitGroup, testCh chan RestTest, resultCh chan RestTest) {
+func worker(workWG *sync.WaitGroup, testCh chan RestTest, resultCh chan RestTest) {
+	defer workWG.Done()
+
+	nextChannels := executeTests(testCh, resultCh)
+	recurseTests(nextChannels, testCh, resultCh)
+}
+
+func recurseTests(nextChannels []chan RestTest, testCh chan RestTest, resultCh chan RestTest) {
+	for n := 0; n < len(nextChannels); n++ {
+		nextChain := executeTests(nextChannels[n], resultCh)
+		recurseTests(nextChain, testCh, resultCh)
+	}
+}
+
+func executeTests(testCh chan RestTest, resultCh chan RestTest) []chan RestTest{
+
+	var nextChannels []chan RestTest
+
 	for test := range testCh {
 		result := ExecuteAndVerify(test)
 
@@ -60,17 +71,18 @@ func testWorker(workWG *sync.WaitGroup, testCh chan RestTest, resultCh chan Rest
 			if result.Generator != nil {
 				newTests := result.Generator(result)
 
+				nextCh := make(chan RestTest, len(newTests)+1)
 				for _, newTest := range newTests {
-					workWG.Add(1)
-					testCh <- newTest
+					nextCh <- newTest
 				}
+				nextChannels = append(nextChannels, nextCh)
 			}
 		}
 
 		resultCh <- result
-
-		workWG.Done()
 	}
+
+	return nextChannels
 }
 
 func resultWorker(resultsWG *sync.WaitGroup, resultCh chan RestTest, allTests *[]RestTest) {
