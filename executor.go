@@ -11,8 +11,7 @@ import (
 	"time"
 )
 
-
-// DoAndVerify DoAndVerify
+// ExecuteAndVerify ExecuteAndVerify
 func ExecuteAndVerify(restTest RestTest) RestTest {
 	var verifyErrors []error
 
@@ -116,4 +115,3 @@ func Execute(restTest RestTest) (RestTest, error) {
 
 	return restTest, nil
 }
-
