@@ -8,8 +8,8 @@ import (
 func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult) {
 	amountOfTests := len(restTests)
 
-	testCh := make(chan RestTest, 3000)
-	resultCh := make(chan RestTest, 3000)
+	testCh := make(chan RestTest, 10000)
+	resultCh := make(chan RestTest, 10000)
 
 	var workWG sync.WaitGroup // All the work to be done
 	var spiderWG sync.WaitGroup
