@@ -1,6 +1,7 @@
 package gorest
 
 import (
+	"log"
 	"sync"
 )
 
@@ -14,21 +15,23 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 	var workWG sync.WaitGroup // All the work to be done
 	var resultsWG sync.WaitGroup // All the results are collated
 
-	for w := 1; w <= workers; w++ {
-		go worker(&workWG, testCh, resultCh)
+	// initial seed of tests to execute
+	for restTestIndex := 0; restTestIndex < amountOfTests; restTestIndex++ {
+		testCh <- restTests[restTestIndex]
 	}
 
+	// set workers off to process
+	for w := 1; w <= workers; w++ {
+		workWG.Add(1)
+		go worker(w, &workWG, testCh, resultCh)
+	}
+
+	// capture the results
 	var allTests []RestTest
 	resultsWG.Add(1)
 	go resultWorker(&resultsWG, resultCh, &allTests)
 
-	// initial seed of tests to execute
-	for restTestIndex := 0; restTestIndex < amountOfTests; restTestIndex++ {
-		workWG.Add(1)
-		testCh <- restTests[restTestIndex]
-	}
-
-	// Wait for worker to finish, once it has, it is safe to close the channel
+	// Wait for workers to finish, once it has, it is safe to close the channel
 	workWG.Wait()
 	close(testCh)
 
@@ -46,40 +49,48 @@ func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult)
 	return tally, results
 }
 
-func worker(workWG *sync.WaitGroup, testCh chan RestTest, resultCh chan RestTest) {
+func worker(wid int, workWG *sync.WaitGroup, testCh chan RestTest, resultCh chan RestTest) {
 	defer workWG.Done()
 
-	nextChannels := executeTests(testCh, resultCh)
-	recurseTests(nextChannels, testCh, resultCh)
+	nextChannels := executeTests(wid, 1, testCh, resultCh)
+	recurseTests(wid, 1, nextChannels, testCh, resultCh)
 }
 
-func recurseTests(nextChannels []chan RestTest, testCh chan RestTest, resultCh chan RestTest) {
+func recurseTests(wid int, depth int, nextChannels []chan RestTest, testCh chan RestTest, resultCh chan RestTest) {
+	depth = depth+1
 	for n := 0; n < len(nextChannels); n++ {
-		nextChain := executeTests(nextChannels[n], resultCh)
-		recurseTests(nextChain, testCh, resultCh)
+		nextChain := executeTests(wid, depth, nextChannels[n], resultCh)
+		recurseTests(wid, depth, nextChain, testCh, resultCh)
 	}
 }
 
-func executeTests(testCh chan RestTest, resultCh chan RestTest) []chan RestTest{
+func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTest) ([]chan RestTest) {
+	log.Printf("wid=%d depth=%d: executing test...", wid, depth)
 
 	var nextChannels []chan RestTest
 
-	for test := range testCh {
-		result := ExecuteAndVerify(test)
+	readData := true
+	for readData {
+		select {
+		case test := <- testCh:
+			result := ExecuteAndVerify(test)
 
-		if len(result.RestTestResult.Errors) == 0 {
-			if result.Generator != nil {
-				newTests := result.Generator(result)
+			if len(result.RestTestResult.Errors) == 0 {
+				if result.Generator != nil {
+					newTests := result.Generator(result)
 
-				nextCh := make(chan RestTest, len(newTests)+1)
-				for _, newTest := range newTests {
-					nextCh <- newTest
+					nextCh := make(chan RestTest, len(newTests)+1)
+					for _, newTest := range newTests {
+						nextCh <- newTest
+					}
+					nextChannels = append(nextChannels, nextCh)
 				}
-				nextChannels = append(nextChannels, nextCh)
 			}
-		}
 
-		resultCh <- result
+			resultCh <- result
+		default:
+			readData = false
+		}
 	}
 
 	return nextChannels

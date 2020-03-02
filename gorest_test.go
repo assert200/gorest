@@ -2,6 +2,7 @@ package gorest
 
 import (
 	"fmt"
+	"gotest.tools/assert"
 	"testing"
 )
 
@@ -58,12 +59,6 @@ func TestGorest(t *testing.T) {
 	restTests = append(restTests, firstTest())
 	resultTallys, allResults := RunTest(restTests, 2)
 
-	if len(resultTallys) != 4 {
-		t.Errorf("resultTallys wrong")
-	}
-
-	fmt.Println(len(allResults))
-	if len(allResults) != 5 {
-		t.Errorf("allResults Wrong")
-	}
+	assert.Assert(t, len(resultTallys) == 4, "resultTallys wrong: %d", len(resultTallys))
+	assert.Assert(t, len(allResults) == 5, "allResults Wrong: %d", len(allResults))
 }
