@@ -9,10 +9,10 @@ import (
 func RunTest(restTests []RestTest, workers int) (ResultTallys, []RestTestResult) {
 	amountOfTests := len(restTests)
 
-	testCh := make(chan RestTest, 10000)
+	testCh := make(chan RestTest, 100)
 	resultCh := make(chan RestTest, 100)
 
-	var workWG sync.WaitGroup // All the work to be done
+	var workWG sync.WaitGroup    // All the work to be done
 	var resultsWG sync.WaitGroup // All the results are collated
 
 	// initial seed of tests to execute
@@ -57,23 +57,21 @@ func worker(wid int, workWG *sync.WaitGroup, testCh chan RestTest, resultCh chan
 }
 
 func recurseTests(wid int, depth int, nextChannels []chan RestTest, testCh chan RestTest, resultCh chan RestTest) {
-	depth = depth+1
+	depth = depth + 1
 	for n := 0; n < len(nextChannels); n++ {
 		nextChain := executeTests(wid, depth, nextChannels[n], resultCh)
 		recurseTests(wid, depth, nextChain, testCh, resultCh)
 	}
 }
 
-func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTest) ([]chan RestTest) {
-	//log.Printf("wid=%d depth=%d: executing test...", wid, depth)
-
+func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTest) []chan RestTest {
 	var nextChannels []chan RestTest
 
 	readData := true
 	for readData {
 		select {
-		case test := <- testCh:
-			log.Printf("wid=%d depth=%d: executing test '%s'", wid, depth, test.Description)
+		case test := <-testCh:
+			log.Printf("wID=%d depth=%d: executing test '%s'", wid, depth, test.Description)
 			result := ExecuteAndVerify(test)
 
 			if len(result.RestTestResult.Errors) == 0 {
@@ -95,7 +93,6 @@ func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTe
 		}
 	}
 
-	//log.Printf("wid=%d depth=%d: finished executing all tests...", wid, depth)
 	return nextChannels
 }
 
