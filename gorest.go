@@ -65,7 +65,7 @@ func recurseTests(wid int, depth int, nextChannels []chan RestTest, testCh chan 
 }
 
 func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTest) ([]chan RestTest) {
-	log.Printf("wid=%d depth=%d: executing test...", wid, depth)
+	//log.Printf("wid=%d depth=%d: executing test...", wid, depth)
 
 	var nextChannels []chan RestTest
 
@@ -73,6 +73,7 @@ func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTe
 	for readData {
 		select {
 		case test := <- testCh:
+			log.Printf("wid=%d depth=%d: executing test '%s'", wid, depth, test.Description)
 			result := ExecuteAndVerify(test)
 
 			if len(result.RestTestResult.Errors) == 0 {
@@ -81,6 +82,7 @@ func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTe
 
 					nextCh := make(chan RestTest, len(newTests)+1)
 					for _, newTest := range newTests {
+						log.Printf("wid=%d depth=%d: queuing new child test '%s'", wid, depth, newTest.Description)
 						nextCh <- newTest
 					}
 					nextChannels = append(nextChannels, nextCh)
@@ -93,6 +95,7 @@ func executeTests(wid int, depth int, testCh chan RestTest, resultCh chan RestTe
 		}
 	}
 
+	//log.Printf("wid=%d depth=%d: finished executing all tests...", wid, depth)
 	return nextChannels
 }
 

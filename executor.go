@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -44,7 +43,7 @@ func ExecuteAndVerify(restTest RestTest) RestTest {
 
 	restTest.RestTestResult.Errors = verifyErrors
 
-	log.Println(restTest.RestTestResult)
+	//log.Println(restTest.RestTestResult)
 	return restTest
 }
 
